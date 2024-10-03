@@ -3,10 +3,8 @@
 import cv2
 import time
 import numpy as np
-import json
 import datetime
 import csv
-from urllib.request import urlopen as uo
 
 import timeavg
 
