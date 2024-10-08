@@ -1,23 +1,21 @@
 from picamera2 import Picamera2
 import time
 
-# Initialize the camera
 camera = Picamera2()
 
-# Configure the camera
-camera_config = camera.create_still_configuration()
+# Lower the resolution to match the one from libcamera-hello
+camera_config = camera.create_still_configuration(main={"size": (1296, 972)})
 camera.configure(camera_config)
 
 # Start the camera
 camera.start()
 
-# Sleep to allow camera adjustment
-time.sleep(2)
+time.sleep(2)  # Allow time for adjustment
 
 # Capture the image and save it
-camera.capture_file("/home/pi/image.jpg")
+camera.capture_file("/home/pi/test_image.jpg")
 
 # Stop the camera
 camera.stop()
 
-print("Picture taken and saved as 'image.jpg'.")
+print("Picture taken and saved as 'test_image.jpg'.")
