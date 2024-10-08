@@ -11,15 +11,13 @@ camera.configure(camera_config)
 # Start the camera
 camera.start()
 
-# Allow the camera to warm up
+# Sleep to allow camera adjustment
 time.sleep(2)
 
-# Capture an image and save it
-image_path = '/home/pi/Desktop/captured_image.jpg'
-camera.capture_file(image_path)
+# Capture the image and save it
+camera.capture_file("/home/pi/image.jpg")
 
 # Stop the camera
 camera.stop()
 
-print(f"Image captured and saved at {image_path}")
-
+print("Picture taken and saved as 'image.jpg'.")
