@@ -32,11 +32,6 @@ def capture_image_and_process():
         cv2.imwrite(save_path, resized_frame)
         print(f"Image saved at {save_path}")
 
-        # Optionally display the image
-        cv2.imshow("Captured Image", resized_frame)
-        cv2.waitKey(0)  # Wait for a key press to close the image window
-        cv2.destroyAllWindows()
-
     else:
         print("Error: Could not capture image.")
 
