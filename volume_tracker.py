@@ -35,14 +35,15 @@ def calculate_height(roi, frame):
     # Convert to grayscale for easier processing
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
-    # Apply histogram equalization to improve contrast
-    equalized_frame = cv2.equalizeHist(gray_frame)
+    # Apply adaptive thresholding to improve contrast
+    adaptive_thresh = cv2.adaptiveThreshold(gray_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
 
-    # Apply edge detection to find the meniscus
-    edges = cv2.Canny(equalized_frame, 50, 150)
+    # Apply morphological operations to enhance edges
+    kernel = np.ones((3, 3), np.uint8)
+    morph = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_GRADIENT, kernel)
 
     # Find the index of the maximum gradient (largest contrast)
-    meniscus_index = np.argmax(np.sum(edges, axis=1))
+    meniscus_index = np.argmax(np.sum(morph, axis=1))
 
     # Calculate the height of the liquid
     height = roi[3] - meniscus_index
