@@ -40,8 +40,8 @@ def calculate_height(roi, frame):
     contours, _ = cv2.findContours(binary_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Filter contours by width and area to find the largest meniscus spanning the full image width
-    min_width = roi[2] * 0.8  # Minimum width threshold (80% of ROI width)
-    min_area = roi[2] * roi[3] * 0.1  # Minimum area threshold (10% of ROI area)
+    min_width = roi[2] * 0.9  # Minimum width threshold (90% of ROI width)
+    min_area = roi[2] * roi[3] * 0.2  # Minimum area threshold (20% of ROI area)
     valid_contours = [c for c in contours if cv2.boundingRect(c)[2] >= min_width and cv2.contourArea(c) >= min_area]
 
     if not valid_contours:
