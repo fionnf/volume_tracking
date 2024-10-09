@@ -35,14 +35,17 @@ def calculate_height(roi, frame):
     # Convert to grayscale for easier processing
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
-    # Calculate the gradient along the vertical axis
-    gradient = np.diff(gray_frame, axis=0)
+    # Apply histogram equalization to improve contrast
+    equalized_frame = cv2.equalizeHist(gray_frame)
+
+    # Apply edge detection to find the meniscus
+    edges = cv2.Canny(equalized_frame, 50, 150)
 
     # Find the index of the maximum gradient (largest contrast)
-    meniscus_index = np.argmax(np.abs(gradient), axis=0)
+    meniscus_index = np.argmax(np.sum(edges, axis=1))
 
     # Calculate the height of the liquid
-    height = roi[3] - meniscus_index.min()
+    height = roi[3] - meniscus_index
     print(f"Height of the liquid: {height} pixels")
 
     # Draw a line at the meniscus
