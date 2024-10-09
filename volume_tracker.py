@@ -1,45 +1,61 @@
+from picamera2 import Picamera2
 import cv2
-import os
-import gc
+import numpy as np
+import time
 
+# Step 1: Initialize the camera and capture an image
+picam2 = Picamera2()
 
-# Function to capture a single image and process it
-def capture_image_and_process():
-    # Open the camera using the V4L2 backend (bypass GStreamer)
-    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+print("Starting the camera...")
+picam2.start()
 
-    # Set a lower resolution to save memory
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+# Capture an initial frame
+frame = picam2.capture_array()
+print("Captured an image from the camera.")
+cv2.imshow("Initial Image", frame)
+cv2.waitKey(500)  # Display the image for 500ms
 
-    # Check if the camera opened successfully
-    if not cap.isOpened():
-        print("Error: Could not open camera.")
-        return
+# Step 2: Define regions of interest (ROIs)
+print("Please select two regions of interest (ROI) in the image for the containers.")
+r1 = cv2.selectROI("Initial Image", frame)
+r2 = cv2.selectROI("Initial Image", frame)
+print(f"Selected ROI 1: {r1}")
+print(f"Selected ROI 2: {r2}")
+cv2.destroyAllWindows()
 
-    # Capture a single frame
-    ret, frame = cap.read()
+# Step 3: Process the ROIs to calculate volume
+def calculate_volume(roi, frame):
+    # Crop the frame to the selected ROI
+    roi_frame = frame[int(roi[1]):int(roi[1] + roi[3]), int(roi[0]):int(roi[0] + roi[2])]
 
-    if ret:
-        # Convert to grayscale to reduce memory usage
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # Convert to grayscale for easier processing
+    gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
-        # Optionally resize the frame for further memory optimization
-        resized_frame = cv2.resize(gray_frame, (160, 120))
+    # Threshold the image to separate liquid from the background
+    _, threshold_frame = cv2.threshold(gray_frame, 127, 255, cv2.THRESH_BINARY)
 
-        # Save the captured image to the current directory
-        save_path = "captured_image.jpg"
-        cv2.imwrite(save_path, resized_frame)
-        print(f"Image saved at {save_path}")
+    # Count the number of non-zero pixels (assuming liquid is darker and fills the region)
+    non_zero_pixels = cv2.countNonZero(threshold_frame)
+    total_pixels = threshold_frame.size
 
-    else:
-        print("Error: Could not capture image.")
+    # Estimate the volume as a ratio of non-zero pixels to total pixels
+    volume_percentage = (non_zero_pixels / total_pixels) * 100
+    print(f"Non-zero pixels: {non_zero_pixels}, Total pixels: {total_pixels}")
+    print(f"Estimated volume percentage: {volume_percentage:.2f}%")
 
-    # Release the camera and clean up
-    cap.release()
-    gc.collect()  # Force garbage collection to free up memory
+    return volume_percentage
 
+# Calculate volume for each container
+print("Processing the first container (ROI 1)...")
+volume1 = calculate_volume(r1, frame)
 
-# Main function to trigger image capture
-if __name__ == "__main__":
-    capture_image_and_process()
+print("Processing the second container (ROI 2)...")
+volume2 = calculate_volume(r2, frame)
+
+# Step 4: Print the estimated volumes
+print(f"Estimated volume for container 1: {volume1:.2f}%")
+print(f"Estimated volume for container 2: {volume2:.2f}%")
+
+# Stop the camera
+picam2.stop()
+print("Camera stopped.")
