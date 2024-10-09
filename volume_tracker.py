@@ -12,6 +12,9 @@ picam2.start()
 # Capture an initial frame
 frame = picam2.capture_array()
 print("Captured an image from the camera.")
+
+# Rotate the image 90 degrees clockwise
+frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 cv2.imwrite("initial_image.jpg", frame)  # Save the image to a file
 
 # Step 2: Define regions of interest (ROIs)
