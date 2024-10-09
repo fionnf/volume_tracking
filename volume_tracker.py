@@ -3,8 +3,6 @@ import cv2
 import numpy as np
 import time
 
-# Code looks at number of black vs number of white pixels
-
 # Step 1: Initialize the camera and capture an image
 picam2 = Picamera2()
 
@@ -35,28 +33,27 @@ def calculate_height(roi, frame):
     # Convert to grayscale for easier processing
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
-    # Apply Gaussian blur to reduce noise and small artifacts
-    blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
+    # Apply binary thresholding to convert the image to black and white
+    _, binary_frame = cv2.threshold(gray_frame, 128, 255, cv2.THRESH_BINARY)
 
-    # Apply adaptive thresholding to improve contrast
-    adaptive_thresh = cv2.adaptiveThreshold(blurred_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+    # Find contours in the binary image
+    contours, _ = cv2.findContours(binary_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Apply morphological operations to enhance edges
-    kernel = np.ones((3, 3), np.uint8)
-    morph = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_GRADIENT, kernel)
+    # Find the largest contour by area
+    largest_contour = max(contours, key=cv2.contourArea)
 
-    # Find the index of the maximum gradient (largest contrast)
-    meniscus_index = np.argmax(np.sum(morph, axis=1))
+    # Get the bounding box of the largest contour
+    x, y, w, h = cv2.boundingRect(largest_contour)
 
     # Calculate the height of the liquid
-    height = roi[3] - meniscus_index
+    height = roi[3] - y
     print(f"Height of the liquid: {height} pixels")
 
     # Draw a line at the meniscus
-    cv2.line(frame, (roi[0], roi[1] + height), (roi[0] + roi[2], roi[1] + height), (0, 255, 0), 2)
+    cv2.line(frame, (roi[0], roi[1] + y), (roi[0] + roi[2], roi[1] + y), (0, 255, 0), 2)
 
     # Display the processed image
-    cv2.imshow("Processed ROI", morph)
+    cv2.imshow("Processed ROI", binary_frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
