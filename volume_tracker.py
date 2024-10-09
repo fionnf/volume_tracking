@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import time
 
+#Good resolution of the meniscus
+
 # Step 1: Initialize the camera and capture an image
 picam2 = Picamera2()
 
