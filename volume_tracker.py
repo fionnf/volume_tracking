@@ -5,8 +5,8 @@ import gc
 
 # Function to capture a single image and process it
 def capture_image_and_process():
-    # Open the camera (0 is the default camera)
-    cap = cv2.VideoCapture(0)
+    # Open the camera using the V4L2 backend (bypass GStreamer)
+    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
     # Set a lower resolution to save memory
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
