@@ -1,22 +1,50 @@
 import cv2
+import os
+import gc
 
-# Open the default camera (index 0)
-cap = cv2.VideoCapture(0)
 
-if not cap.isOpened():
-    print("Error: Could not open camera.")
-    exit()
+# Function to capture a single image and process it
+def capture_image_and_process():
+    # Open the camera (0 is the default camera)
+    cap = cv2.VideoCapture(0)
 
-while True:
+    # Set a lower resolution to save memory
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+
+    # Check if the camera opened successfully
+    if not cap.isOpened():
+        print("Error: Could not open camera.")
+        return
+
+    # Capture a single frame
     ret, frame = cap.read()
-    if not ret:
-        print("Error: Could not read frame.")
-        break
 
-    cv2.imshow('Camera Feed', frame)
+    if ret:
+        # Convert to grayscale to reduce memory usage
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        # Optionally resize the frame for further memory optimization
+        resized_frame = cv2.resize(gray_frame, (160, 120))
 
-cap.release()
-cv2.destroyAllWindows()
+        # Save the captured image to the current directory
+        save_path = "captured_image.jpg"
+        cv2.imwrite(save_path, resized_frame)
+        print(f"Image saved at {save_path}")
+
+        # Optionally display the image
+        cv2.imshow("Captured Image", resized_frame)
+        cv2.waitKey(0)  # Wait for a key press to close the image window
+        cv2.destroyAllWindows()
+
+    else:
+        print("Error: Could not capture image.")
+
+    # Release the camera and clean up
+    cap.release()
+    gc.collect()  # Force garbage collection to free up memory
+
+
+# Main function to trigger image capture
+if __name__ == "__main__":
+    capture_image_and_process()
