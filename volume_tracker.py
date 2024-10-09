@@ -3,8 +3,6 @@ import cv2
 import numpy as np
 import time
 
-#Good resolution of the meniscus
-
 # Step 1: Initialize the camera and capture an image
 picam2 = Picamera2()
 
@@ -41,11 +39,20 @@ def calculate_height(roi, frame):
     # Find contours in the binary image
     contours, _ = cv2.findContours(binary_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Sort contours by the y-coordinate of their bounding box (descending)
-    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1], reverse=True)
+    # Filter contours by width and area to find the largest meniscus spanning the full image width
+    min_width = roi[2] * 0.8  # Minimum width threshold (80% of ROI width)
+    min_area = roi[2] * roi[3] * 0.1  # Minimum area threshold (10% of ROI area)
+    valid_contours = [c for c in contours if cv2.boundingRect(c)[2] >= min_width and cv2.contourArea(c) >= min_area]
+
+    if not valid_contours:
+        print("No valid meniscus found.")
+        return 0
+
+    # Sort valid contours by the y-coordinate of their bounding box (descending)
+    valid_contours = sorted(valid_contours, key=lambda c: cv2.boundingRect(c)[1], reverse=True)
 
     # Get the bounding box of the contour closest to the bottom
-    x, y, w, h = cv2.boundingRect(contours[0])
+    x, y, w, h = cv2.boundingRect(valid_contours[0])
 
     # Calculate the height of the liquid
     height = roi[3] - y
