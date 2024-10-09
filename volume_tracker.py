@@ -12,13 +12,12 @@ picam2.start()
 # Capture an initial frame
 frame = picam2.capture_array()
 print("Captured an image from the camera.")
-cv2.imshow("Initial Image", frame)
-cv2.waitKey(500)  # Display the image for 500ms
+cv2.imwrite("initial_image.jpg", frame)  # Save the image to a file
 
 # Step 2: Define regions of interest (ROIs)
 print("Please select two regions of interest (ROI) in the image for the containers.")
-r1 = cv2.selectROI("Initial Image", frame)
-r2 = cv2.selectROI("Initial Image", frame)
+r1 = cv2.selectROI("initial_image.jpg", frame, fromCenter=False, showCrosshair=True)
+r2 = cv2.selectROI("initial_image.jpg", frame, fromCenter=False, showCrosshair=True)
 print(f"Selected ROI 1: {r1}")
 print(f"Selected ROI 2: {r2}")
 cv2.destroyAllWindows()
