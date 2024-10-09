@@ -55,6 +55,11 @@ def calculate_height(roi, frame):
     # Draw a line at the meniscus
     cv2.line(frame, (roi[0], roi[1] + height), (roi[0] + roi[2], roi[1] + height), (0, 255, 0), 2)
 
+    # Display the processed image
+    cv2.imshow("Processed ROI", morph)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
     return height
 
 # Calculate the height of the liquid in both containers
