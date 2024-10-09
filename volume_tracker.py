@@ -33,15 +33,8 @@ def calculate_height(roi, frame):
     # Convert to grayscale for easier processing
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
-    # Apply Gaussian blur to reduce noise
-    blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
-
-    # Apply adaptive thresholding
-    binary_frame = cv2.adaptiveThreshold(blurred_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-
-    # Apply morphological operations to clean up the image
-    kernel = np.ones((3, 3), np.uint8)
-    binary_frame = cv2.morphologyEx(binary_frame, cv2.MORPH_CLOSE, kernel)
+    # Apply binary thresholding to convert the image to black and white
+    _, binary_frame = cv2.threshold(gray_frame, 128, 255, cv2.THRESH_BINARY)
 
     # Find contours in the binary image
     contours, _ = cv2.findContours(binary_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
