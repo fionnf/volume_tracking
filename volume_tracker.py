@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import time
 
+#Code looks at number of black vs number of white pixels
+
 # Step 1: Initialize the camera and capture an image
 picam2 = Picamera2()
 
