@@ -39,11 +39,11 @@ def calculate_height(roi, frame):
     # Find contours in the binary image
     contours, _ = cv2.findContours(binary_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Find the largest contour by area
-    largest_contour = max(contours, key=cv2.contourArea)
+    # Sort contours by the y-coordinate of their bounding box (descending)
+    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1], reverse=True)
 
-    # Get the bounding box of the largest contour
-    x, y, w, h = cv2.boundingRect(largest_contour)
+    # Get the bounding box of the contour closest to the bottom
+    x, y, w, h = cv2.boundingRect(contours[0])
 
     # Calculate the height of the liquid
     height = roi[3] - y
