@@ -35,8 +35,11 @@ def calculate_height(roi, frame):
     # Convert to grayscale for easier processing
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
+    # Apply Gaussian blur to reduce noise and small artifacts
+    blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
+
     # Apply adaptive thresholding to improve contrast
-    adaptive_thresh = cv2.adaptiveThreshold(gray_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+    adaptive_thresh = cv2.adaptiveThreshold(blurred_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
 
     # Apply morphological operations to enhance edges
     kernel = np.ones((3, 3), np.uint8)
