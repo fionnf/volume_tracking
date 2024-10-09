@@ -34,7 +34,7 @@ def calculate_height(roi, frame):
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
     # Apply binary thresholding to convert the image to black and white
-    _, binary_frame = cv2.threshold(gray_frame, 128, 255, cv2.THRESH_BINARY)
+    binary_frame = cv2.threshold(gray_frame, 200, 255, cv2.THRESH_BINARY)
 
     # Find contours in the binary image
     contours, _ = cv2.findContours(binary_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
