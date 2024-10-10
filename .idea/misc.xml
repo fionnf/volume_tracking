@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Remote Python 3.11.2 (sftp://raspberrypi@192.168.86.115:22/home/raspberrypi/.virtualenvs/rfb-volume-balancing/bin/python)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.9 (rfb-volume-balancing)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.9 (volume_tracking)" project-jdk-type="Python SDK" />
 </project>
