@@ -12,7 +12,7 @@ pump_dir = 'pumps/levels/*.csv'
 import os
 from simple_pid import PID
 
-time_window = 18 # minutes - levelsensor logs data every 5 seconds, using this a priori
+time_window = 18 # minutes - levelsensor logs images every 5 seconds, using this a priori
 def get_last_n_lines(file_name, N):
     # Create an empty list to keep the track of last N lines
     list_of_lines = []
@@ -44,13 +44,13 @@ def get_last_n_lines(file_name, N):
             else:
                 # If last read character is not eol then add it in buffer
                 buffer.extend(new_byte)
-        # As file is read completely, if there is still data in buffer, then its first line.
+        # As file is read completely, if there is still images in buffer, then its first line.
         if len(buffer) > 0:
             list_of_lines.append(buffer.decode()[::-1])
     # return the reversed list
     return list(reversed(list_of_lines))
 
-pump_dir = os.path.expanduser('~/Nextcloud/docs/projects/PhD/data/pumps/levels/*.csv')
+pump_dir = os.path.expanduser('~/Nextcloud/docs/projects/PhD/images/pumps/levels/*.csv')
 most_recent = 0
 for f in glob.iglob(pump_dir):
     last_updated = os.path.getmtime(f)
