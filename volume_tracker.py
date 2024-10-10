@@ -3,8 +3,6 @@ import cv2
 import numpy as np
 import time
 
-#improved canny edge detection
-
 # Step 1: Initialize the camera and capture an image
 picam2 = Picamera2()
 
@@ -46,7 +44,7 @@ def calculate_height(roi, frame):
 
     if not contours:
         print("No valid meniscus found.")
-        return 0
+        return 0, edges
 
     # Sort contours by the y-coordinate of their bounding box (descending)
     contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1], reverse=True)
@@ -61,19 +59,17 @@ def calculate_height(roi, frame):
     # Draw a line at the meniscus
     cv2.line(frame, (roi[0], roi[1] + y), (roi[0] + roi[2], roi[1] + y), (0, 255, 0), 2)
 
-    # Display the processed image
-    cv2.imshow("Processed ROI", edges)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    return height, edges
 
-    return height
+# Create a copy of the original frame to draw the meniscus lines
+frame_with_lines = frame.copy()
 
 # Calculate the height of the liquid in both containers
 print("Processing the first container (ROI 1)...")
-height1 = calculate_height(r1, frame)
+height1, edges1 = calculate_height(r1, frame_with_lines)
 
 print("Processing the second container (ROI 2)...")
-height2 = calculate_height(r2, frame)
+height2, edges2 = calculate_height(r2, frame_with_lines)
 
 # Step 4: Estimate the volume percentage based on the height
 container_height1 = r1[3]  # Total height of the selected ROI
@@ -84,11 +80,14 @@ container_height2 = r2[3]  # Total height of the selected ROI
 volume_percentage2 = (height2 / container_height2) * 100
 print(f"Estimated volume percentage for container 2: {volume_percentage2:.2f}%")
 
-# Save the marked image
-cv2.imwrite("marked_image.jpg", frame)
+# Combine the original image, the processed image, and the image with meniscus lines
+combined_image = np.hstack((frame, cv2.cvtColor(edges1, cv2.COLOR_GRAY2BGR), frame_with_lines))
 
-# Display the marked image
-cv2.imshow("Marked Image", frame)
+# Save the combined image
+cv2.imwrite("combined_image.jpg", combined_image)
+
+# Display the combined image
+cv2.imshow("Combined Image", combined_image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
