@@ -1,6 +1,6 @@
+from picamera2 import Picamera2
 import cv2
 import numpy as np
-from picamera2 import Picamera2
 import time
 
 # Step 1: Initialize the camera and capture an image
@@ -33,25 +33,26 @@ def calculate_height(roi, frame):
     # Convert to grayscale for easier processing
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
-    # Apply adaptive thresholding for better contrast in low-light conditions
-    binary_frame = cv2.adaptiveThreshold(
-        gray_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
-    )
+    # Apply Gaussian blur to reduce noise
+    blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
 
-    # Find contours in the binary image
-    contours, _ = cv2.findContours(binary_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Apply Canny edge detection
+    edges = cv2.Canny(blurred_frame, 50, 150)
+
+    # Find contours in the edge-detected image
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     if not contours:
         print("No valid meniscus found.")
         return 0
 
-    # Sort contours by y-coordinate of their bounding box (topmost to bottom)
-    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1])
+    # Sort contours by the y-coordinate of their bounding box (descending)
+    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1], reverse=True)
 
-    # Take the topmost contour to identify the meniscus
+    # Get the bounding box of the contour closest to the bottom
     x, y, w, h = cv2.boundingRect(contours[0])
 
-    # Calculate the height of the liquid based on the meniscus location
+    # Calculate the height of the liquid
     height = roi[3] - y
     print(f"Height of the liquid: {height} pixels")
 
@@ -59,7 +60,7 @@ def calculate_height(roi, frame):
     cv2.line(frame, (roi[0], roi[1] + y), (roi[0] + roi[2], roi[1] + y), (0, 255, 0), 2)
 
     # Display the processed image
-    cv2.imshow("Processed ROI", binary_frame)
+    cv2.imshow("Processed ROI", edges)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
