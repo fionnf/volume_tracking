@@ -73,6 +73,10 @@ def calculate_height(roi, frame):
 
     if best_contour is None:
         print("No valid horizontal meniscus found.")
+        # Display the edge-detected image even if no contour is found
+        cv2.imshow("Processed ROI (No Meniscus Detected)", edges)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
         return 0
 
     # Get the bounding box of the best (most significant horizontal) contour
