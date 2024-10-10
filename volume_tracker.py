@@ -34,7 +34,7 @@ def calculate_height(roi, frame):
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
     # Apply Gaussian blur to reduce noise
-    blurred_frame = cv2.GaussianBlur(gray_frame, (3, 3), 0)
+    blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
 
     # Apply Canny edge detection with dynamic thresholds
     v = np.median(blurred_frame)
