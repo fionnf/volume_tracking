@@ -17,7 +17,6 @@ if not os.path.exists(output_dir):
 
 # Create metadata.csv and README.md
 metadata_path = os.path.join(output_dir, 'metadata.csv')
-readme_path = os.path.join(output_dir, 'README.md')
 
 if not os.path.exists(metadata_path):
     with open(metadata_path, 'w') as f:
@@ -31,9 +30,14 @@ if not os.path.exists(readme_path):
         f.write("## Metadata\n\n")
         f.write("Additional metadata about the images can be found in `metadata.csv`.\n")
 
-# Initialize the Git repository
-repo = git.Repo.init('.')
+# Use the existing Git repository
+repo_path = os.path.dirname(os.path.abspath(__file__))  # Path of the current code
+repo = git.Repo(repo_path)
 origin = repo.remote(name='origin')
+
+# Ensure the script uses the same branch
+current_branch = repo.active_branch.name
+repo.git.checkout(current_branch)
 
 # Capture images at specified intervals and upload to Git
 interval = 10  # Interval in seconds
@@ -43,7 +47,7 @@ while True:
 
     # Capture image
     frame = picam2.capture_array()
-    #optional clockwise rotation
+    # Optional clockwise rotation
     frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
     cv2.imwrite(image_path, frame)
 
