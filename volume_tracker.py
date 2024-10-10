@@ -34,12 +34,12 @@ def calculate_height(roi, frame):
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
     # Apply Gaussian blur to reduce noise
-    blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
+    blurred_frame = cv2.GaussianBlur(gray_frame, (3, 3), 0)
 
     # Apply Canny edge detection with dynamic thresholds
     v = np.median(blurred_frame)
-    lower = int(max(0, 0.5 * v))
-    upper = int(min(255, 1.5 * v))
+    lower = int(max(0, 0.4 * v))
+    upper = int(min(255, 1.6 * v))
     edges = cv2.Canny(blurred_frame, lower, upper)
 
     # Find contours in the edge-detected image
