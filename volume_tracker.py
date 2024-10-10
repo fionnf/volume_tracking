@@ -1,6 +1,6 @@
-from picamera2 import Picamera2
 import cv2
 import numpy as np
+from picamera2 import Picamera2
 import time
 
 # Step 1: Initialize the camera and capture an image
@@ -33,29 +33,25 @@ def calculate_height(roi, frame):
     # Convert to grayscale for easier processing
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
 
-    # Apply binary thresholding to convert the image to black and white
-    _, binary_frame = cv2.threshold(gray_frame, 200, 255, cv2.THRESH_BINARY)
+    # Apply adaptive thresholding for better contrast in low-light conditions
+    binary_frame = cv2.adaptiveThreshold(
+        gray_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
+    )
 
     # Find contours in the binary image
     contours, _ = cv2.findContours(binary_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Filter contours by width, area, and height to find the largest meniscus spanning the full image width
-    min_width = roi[2] * 0.9  # Minimum width threshold (90% of ROI width)
-    min_area = roi[2] * roi[3] * 0.2  # Minimum area threshold (20% of ROI area)
-    min_height = roi[3] * 0.5  # Minimum height threshold (50% of ROI height)
-    valid_contours = [c for c in contours if cv2.boundingRect(c)[2] >= min_width and cv2.contourArea(c) >= min_area and cv2.boundingRect(c)[3] >= min_height]
-
-    if not valid_contours:
+    if not contours:
         print("No valid meniscus found.")
         return 0
 
-    # Sort valid contours by the y-coordinate of their bounding box (descending)
-    valid_contours = sorted(valid_contours, key=lambda c: cv2.boundingRect(c)[1], reverse=True)
+    # Sort contours by y-coordinate of their bounding box (topmost to bottom)
+    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1])
 
-    # Get the bounding box of the contour closest to the bottom
-    x, y, w, h = cv2.boundingRect(valid_contours[0])
+    # Take the topmost contour to identify the meniscus
+    x, y, w, h = cv2.boundingRect(contours[0])
 
-    # Calculate the height of the liquid
+    # Calculate the height of the liquid based on the meniscus location
     height = roi[3] - y
     print(f"Height of the liquid: {height} pixels")
 
