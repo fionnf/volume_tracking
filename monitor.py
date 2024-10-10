@@ -33,7 +33,7 @@ r2 = cv2.selectROI("initial_image.jpg", frame, fromCenter=False, showCrosshair=T
 print(f"Selected ROI 2: {r2}")
 cv2.destroyAllWindows()
 
-def calculate_height(roi, frame):
+def calculate_height(roi, frame, roi_name):
     roi_frame = frame[int(roi[1]):int(roi[1] + roi[3]), int(roi[0]):int(roi[0] + roi[2])]
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
     blurred_frame = cv2.GaussianBlur(gray_frame, (3, 3), 0)
@@ -44,8 +44,14 @@ def calculate_height(roi, frame):
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     if not contours:
-        print("No valid meniscus found.")
-        return 0
+        print(f"No valid meniscus found in {roi_name}. Retrying with adjusted parameters.")
+        lower = int(max(0, 0.3 * v))
+        upper = int(min(255, 1.8 * v))
+        edges = cv2.Canny(blurred_frame, lower, upper)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours:
+            print(f"No valid meniscus found in {roi_name} after retrying.")
+            return 0
 
     max_aspect_ratio = 0
     best_contour = None
@@ -62,7 +68,7 @@ def calculate_height(roi, frame):
                 best_contour = contour
 
     if best_contour is None:
-        print("No valid horizontal meniscus found.")
+        print(f"No valid horizontal meniscus found in {roi_name}.")
         return 0
 
     x, y, w, h = cv2.boundingRect(best_contour)
