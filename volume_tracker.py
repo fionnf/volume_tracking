@@ -38,8 +38,8 @@ def calculate_height(roi, frame):
 
     # Apply Canny edge detection with dynamic thresholds
     v = np.median(blurred_frame)
-    lower = int(max(0, 0.66 * v))
-    upper = int(min(255, 1.33 * v))
+    lower = int(max(0, 0.5 * v))
+    upper = int(min(255, 1.5 * v))
     edges = cv2.Canny(blurred_frame, lower, upper)
 
     # Find contours in the edge-detected image
@@ -49,20 +49,43 @@ def calculate_height(roi, frame):
         print("No valid meniscus found.")
         return 0
 
-    # Sort contours by the y-coordinate of their bounding box (descending)
-    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1], reverse=True)
+    # Initialize variables to keep track of the most significant horizontal contour
+    max_aspect_ratio = 0
+    best_contour = None
 
-    # Get the bounding box of the contour closest to the bottom
-    x, y, w, h = cv2.boundingRect(contours[0])
+    # Loop through contours and filter for horizontal lines
+    for contour in contours:
+        # Get the bounding rectangle of the contour
+        x, y, w, h = cv2.boundingRect(contour)
+
+        # Calculate the aspect ratio (width/height)
+        aspect_ratio = w / float(h)
+
+        # Get the minimum area rectangle (oriented) to check the angle of the contour
+        rect = cv2.minAreaRect(contour)
+        angle = rect[2]
+
+        # Condition: Check if the contour is mostly horizontal
+        if aspect_ratio > 5.0 and -10 <= angle <= 10:  # Aspect ratio > 5 and angle close to 0 (horizontal)
+            if aspect_ratio > max_aspect_ratio:
+                max_aspect_ratio = aspect_ratio
+                best_contour = contour
+
+    if best_contour is None:
+        print("No valid horizontal meniscus found.")
+        return 0
+
+    # Get the bounding box of the best (most significant horizontal) contour
+    x, y, w, h = cv2.boundingRect(best_contour)
 
     # Calculate the height of the liquid
     height = roi[3] - y
     print(f"Height of the liquid: {height} pixels")
 
-    # Draw a line at the meniscus
+    # Draw a line at the meniscus (horizontal contour)
     cv2.line(frame, (roi[0], roi[1] + y), (roi[0] + roi[2], roi[1] + y), (0, 255, 0), 2)
 
-    # Display the processed image
+    # Display the processed image (optional)
     cv2.imshow("Processed ROI", edges)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
