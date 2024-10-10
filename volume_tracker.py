@@ -36,15 +36,18 @@ def calculate_height(roi, frame):
     # Apply Gaussian blur to reduce noise
     blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
 
-    # Apply Canny edge detection
-    edges = cv2.Canny(blurred_frame, 50, 150)
+    # Apply Canny edge detection with dynamic thresholds
+    v = np.median(blurred_frame)
+    lower = int(max(0, 0.66 * v))
+    upper = int(min(255, 1.33 * v))
+    edges = cv2.Canny(blurred_frame, lower, upper)
 
     # Find contours in the edge-detected image
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     if not contours:
         print("No valid meniscus found.")
-        return 0, edges
+        return 0
 
     # Sort contours by the y-coordinate of their bounding box (descending)
     contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1], reverse=True)
@@ -59,17 +62,19 @@ def calculate_height(roi, frame):
     # Draw a line at the meniscus
     cv2.line(frame, (roi[0], roi[1] + y), (roi[0] + roi[2], roi[1] + y), (0, 255, 0), 2)
 
-    return height, edges
+    # Display the processed image
+    cv2.imshow("Processed ROI", edges)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-# Create a copy of the original frame to draw the meniscus lines
-frame_with_lines = frame.copy()
+    return height
 
 # Calculate the height of the liquid in both containers
 print("Processing the first container (ROI 1)...")
-height1, edges1 = calculate_height(r1, frame_with_lines)
+height1 = calculate_height(r1, frame)
 
 print("Processing the second container (ROI 2)...")
-height2, edges2 = calculate_height(r2, frame_with_lines)
+height2 = calculate_height(r2, frame)
 
 # Step 4: Estimate the volume percentage based on the height
 container_height1 = r1[3]  # Total height of the selected ROI
@@ -80,14 +85,11 @@ container_height2 = r2[3]  # Total height of the selected ROI
 volume_percentage2 = (height2 / container_height2) * 100
 print(f"Estimated volume percentage for container 2: {volume_percentage2:.2f}%")
 
-# Combine the original image, the processed image, and the image with meniscus lines
-combined_image = np.hstack((frame, cv2.cvtColor(edges1, cv2.COLOR_GRAY2BGR), frame_with_lines))
+# Save the marked image
+cv2.imwrite("marked_image.jpg", frame)
 
-# Save the combined image
-cv2.imwrite("combined_image.jpg", combined_image)
-
-# Display the combined image
-cv2.imshow("Combined Image", combined_image)
+# Display the marked image
+cv2.imshow("Marked Image", frame)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
