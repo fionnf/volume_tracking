@@ -43,7 +43,7 @@ def calculate_height(roi, frame):
         return 0
 
     # Initialize variables to keep track of the most significant horizontal contour
-    max_aspect_ratio = 0
+    max_aspect_ratio = -20
     best_contour = None
 
     # Loop through contours and filter for horizontal lines
@@ -59,8 +59,7 @@ def calculate_height(roi, frame):
         angle = rect[2]
 
         # Condition: Check if the contour is mostly horizontal
-        if aspect_ratio > 1.0:  # Aspect ratio > 5 and angle close to 0 (horizontal)
-            if aspect_ratio > max_aspect_ratio:
+        if aspect_ratio > max_aspect_ratio:
                 max_aspect_ratio = aspect_ratio
                 best_contour = contour
 
