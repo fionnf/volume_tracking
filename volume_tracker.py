@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import time
 
+#improved canny edge detection
+
 # Step 1: Initialize the camera and capture an image
 picam2 = Picamera2()
 
