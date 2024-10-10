@@ -113,7 +113,7 @@ volume_percentage2 = (height2 / container_height2) * 100
 print(f"Estimated volume percentage for container 2: {volume_percentage2:.2f}%")
 
 # Save the marked image
-cv2.imwrite("marked_image.jpg", frame)
+cv2.imwrite("training/marked_image.jpg", frame)
 
 # Display the marked image
 cv2.imshow("Marked Image", frame)

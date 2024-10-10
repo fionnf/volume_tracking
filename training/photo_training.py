@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Load the image from a file
-image_path = "/Users/fionnferreira/PycharmProjects/volume_tracking/training/training_1.png"
+image_path = "/training/training_1.png"
 frame = cv2.imread(image_path)
 
 # Rotate the image 90 degrees clockwise if needed
@@ -59,7 +59,7 @@ def calculate_height(roi, frame):
         angle = rect[2]
 
         # Condition: Check if the contour is mostly horizontal
-        if aspect_ratio > 3.0 and -10 <= angle <= 20:  # Aspect ratio > 5 and angle close to 0 (horizontal)
+        if aspect_ratio > 1.0:  # Aspect ratio > 5 and angle close to 0 (horizontal)
             if aspect_ratio > max_aspect_ratio:
                 max_aspect_ratio = aspect_ratio
                 best_contour = contour
