@@ -1,4 +1,4 @@
-import time
+
 
 """
 This script captures images at specified intervals using the Picamera2 on a Raspberry Pi, 
@@ -21,7 +21,7 @@ Dependencies:
 - shutil
 """
 
-
+import time
 import os
 import subprocess
 import cv2
