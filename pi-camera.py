@@ -48,7 +48,7 @@ def manage_disk_usage(directory, threshold=80):
 
 # Ask for the experiment name
 experiment_name = input("Enter the experiment name: ")
-image_interval = int(input("Enter the image capture interval (in minutes): "))
+image_interval = int(input("Enter the image capture interval (in seconds): "))
 
 # Initialize the camera
 picam2 = Picamera2()
@@ -84,7 +84,7 @@ current_branch = subprocess.run(['git', 'branch', '--show-current'], cwd=repo_pa
 subprocess.run(['git', 'checkout', current_branch], cwd=repo_path)
 
 # Capture images at specified intervals and upload to Git
-interval = image_interval * 60
+interval = image_interval
 while True:
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     image_path = os.path.join(output_dir, f"{timestamp}.jpg")
