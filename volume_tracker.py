@@ -13,15 +13,21 @@ def read_calibration(file_path):
         instructions = lines[3].split(':')[1].strip()
     return shape, min_volume, max_volume, instructions
 
-def calculate_height(roi, frame):
+def calculate_height(roi, frame, processed_dir, filename):
     roi_frame = frame[int(roi[1]):int(roi[1] + roi[3]), int(roi[0]):int(roi[0] + roi[2])]
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
-    blurred_frame = cv2.GaussianBlur(gray_frame, (3, 3), 0)
+    blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
     v = np.median(blurred_frame)
     lower = int(max(0, 0.4 * v))
     upper = int(min(255, 1.6 * v))
     edges = cv2.Canny(blurred_frame, lower, upper)
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Save the processed image with edge detection lines
+    processed_image = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+    cv2.drawContours(processed_image, contours, -1, (0, 255, 0), 2)
+    processed_image_path = os.path.join(processed_dir, filename)
+    cv2.imwrite(processed_image_path, processed_image)
 
     if not contours:
         return 0
@@ -58,6 +64,11 @@ def process_images(directory, r1, r2, shape, min_volume, max_volume):
     timestamps = []
     raw_heights = []
 
+    # Create a subdirectory for processed images
+    processed_dir = os.path.join(directory, "processed_images")
+    if not os.path.exists(processed_dir):
+        os.makedirs(processed_dir)
+
     for filename in sorted(os.listdir(directory)):
         if filename.endswith(".jpg"):
             filepath = os.path.join(directory, filename)
@@ -65,8 +76,8 @@ def process_images(directory, r1, r2, shape, min_volume, max_volume):
             timestamp = time.strptime(filename.split('.')[0], "%Y%m%d-%H%M%S")
             timestamps.append(timestamp)
 
-            height1 = calculate_height(r1, frame)
-            height2 = calculate_height(r2, frame)
+            height1 = calculate_height(r1, frame, processed_dir, filename)
+            height2 = calculate_height(r2, frame, processed_dir, filename)
 
             container_height1 = r1[3]
             volume1 = calculate_volume(height1, min_volume, max_volume, container_height1, shape)
