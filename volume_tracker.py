@@ -13,10 +13,17 @@ def read_calibration(file_path):
         instructions = lines[3].split(':')[1].strip()
     return shape, min_volume, max_volume, instructions
 
-def calculate_height(roi, frame, processed_dir, filename):
+
+def calculate_height(roi, frame, processed_dir, blur_dir, filename):
     roi_frame = frame[int(roi[1]):int(roi[1] + roi[3]), int(roi[0]):int(roi[0] + roi[2])]
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
-    blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
+    _, binary_frame = cv2.threshold(gray_frame, 60, 255, cv2.THRESH_BINARY)
+    blurred_frame = cv2.GaussianBlur(binary_frame, (25, 5), 0)
+
+    # Save the Gaussian blur image
+    blur_image_path = os.path.join(blur_dir, filename)
+    cv2.imwrite(blur_image_path, blurred_frame)
+
     v = np.median(blurred_frame)
     lower = int(max(0, 0.4 * v))
     upper = int(min(255, 1.6 * v))
@@ -32,42 +39,43 @@ def calculate_height(roi, frame, processed_dir, filename):
     if not contours:
         return 0
 
-    max_aspect_ratio = 0
-    best_contour = None
+    # Sort contours by their y-coordinate (lowest first)
+    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1])
+
+    longest_contour = None
+    max_length = 0
 
     for contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
         aspect_ratio = w / float(h)
-        rect = cv2.minAreaRect(contour)
-        angle = rect[2]
 
-        if aspect_ratio > 2.0 and -45 <= angle <= 45:
-            if aspect_ratio > max_aspect_ratio:
-                max_aspect_ratio = aspect_ratio
-                best_contour = contour
+        # Check if the contour is horizontal
+        if aspect_ratio > 2.0:
+            length = cv2.arcLength(contour, True)
+            if length > max_length:
+                max_length = length
+                longest_contour = contour
 
-    if best_contour is None:
+    if longest_contour is None:
         return 0
 
-    x, y, w, h = cv2.boundingRect(best_contour)
+    x, y, w, h = cv2.boundingRect(longest_contour)
     height = roi[3] - y
     return height
 
-def calculate_volume(height, min_volume, max_volume, container_height, shape):
-    if shape == 'cylindrical':
-        return min_volume + (height / container_height) * (max_volume - min_volume)
-    else:
-        raise ValueError("Unsupported shape")
 
 def process_images(directory, r1, r2, shape, min_volume, max_volume):
     volumes = []
     timestamps = []
     raw_heights = []
 
-    # Create a subdirectory for processed images
+    # Create subdirectories for processed and blur images
     processed_dir = os.path.join(directory, "processed_images")
+    blur_dir = os.path.join(directory, "blur_images")
     if not os.path.exists(processed_dir):
         os.makedirs(processed_dir)
+    if not os.path.exists(blur_dir):
+        os.makedirs(blur_dir)
 
     for filename in sorted(os.listdir(directory)):
         if filename.endswith(".jpg"):
@@ -76,8 +84,8 @@ def process_images(directory, r1, r2, shape, min_volume, max_volume):
             timestamp = time.strptime(filename.split('.')[0], "%Y%m%d-%H%M%S")
             timestamps.append(timestamp)
 
-            height1 = calculate_height(r1, frame, processed_dir, filename)
-            height2 = calculate_height(r2, frame, processed_dir, filename)
+            height1 = calculate_height(r1, frame, processed_dir, blur_dir, filename)
+            height2 = calculate_height(r2, frame, processed_dir, blur_dir, filename)
 
             container_height1 = r1[3]
             volume1 = calculate_volume(height1, min_volume, max_volume, container_height1, shape)
@@ -89,6 +97,12 @@ def process_images(directory, r1, r2, shape, min_volume, max_volume):
             raw_heights.append((height1, height2))
 
     return timestamps, volumes, raw_heights
+
+def calculate_volume(height, min_volume, max_volume, container_height, shape):
+    if shape == 'cylindrical':
+        return min_volume + (height / container_height) * (max_volume - min_volume)
+    else:
+        raise ValueError("Unsupported shape")
 
 def save_results(timestamps, volumes, raw_heights, output_file):
     with open(output_file, 'w') as f:
