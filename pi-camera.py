@@ -1,6 +1,6 @@
 import time
 import os
-import git
+import subprocess
 from picamera2 import Picamera2
 
 # Ask for the experiment name
@@ -17,6 +17,7 @@ if not os.path.exists(output_dir):
 
 # Create metadata.csv and README.md
 metadata_path = os.path.join(output_dir, 'metadata.csv')
+readme_path = os.path.join(output_dir, 'README.md')
 
 if not os.path.exists(metadata_path):
     with open(metadata_path, 'w') as f:
@@ -32,12 +33,10 @@ if not os.path.exists(readme_path):
 
 # Use the existing Git repository
 repo_path = os.path.dirname(os.path.abspath(__file__))  # Path of the current code
-repo = git.Repo(repo_path)
-origin = repo.remote(name='origin')
 
 # Ensure the script uses the same branch
-current_branch = repo.active_branch.name
-repo.git.checkout(current_branch)
+current_branch = subprocess.run(['git', 'branch', '--show-current'], cwd=repo_path, capture_output=True, text=True).stdout.strip()
+subprocess.run(['git', 'checkout', current_branch], cwd=repo_path)
 
 # Capture images at specified intervals and upload to Git
 interval = 10  # Interval in seconds
@@ -56,9 +55,9 @@ while True:
         f.write(f"{timestamp},{image_path}\n")
 
     # Add, commit, and push the new image and metadata to the Git repository
-    repo.index.add([image_path, metadata_path])
-    repo.index.commit(f"Add image and metadata for {timestamp}")
-    origin.push()
+    subprocess.run(['git', 'add', image_path, metadata_path], cwd=repo_path)
+    subprocess.run(['git', 'commit', '-m', f"Add image and metadata for {timestamp}"], cwd=repo_path)
+    subprocess.run(['git', 'push'], cwd=repo_path)
 
     print(f"Captured and uploaded image at {timestamp}")
     time.sleep(interval)
