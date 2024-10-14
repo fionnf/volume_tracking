@@ -1,12 +1,54 @@
 import time
+
+"""
+This script captures images at specified intervals using the Picamera2 on a Raspberry Pi, 
+saves them to a directory, and uploads them to a Git repository. It also manages disk usage 
+by deleting the local images after they have been successfully pushed to GitHub, ensuring 
+that the Raspberry Pi's storage does not get full.
+
+Features:
+- Captures images at user-defined intervals.
+- Saves images and metadata to a specified directory.
+- Automatically creates a metadata CSV file and a README file in the output directory.
+- Uses the current Git branch to commit and push images and metadata to the repository.
+- Deletes local images after successful upload to GitHub to manage disk space.
+- Includes a function to check disk usage and delete the oldest files if the usage exceeds a specified threshold.
+
+Dependencies:
+- picamera2
+- OpenCV
+- Git
+- shutil
+"""
+
+
 import os
 import subprocess
 import cv2
 from picamera2 import Picamera2
+import shutil
+
+# Function to check disk usage and delete oldest files if necessary
+def manage_disk_usage(directory, threshold=80):
+    total, used, free = shutil.disk_usage("/")
+    used_percentage = (used / total) * 100
+
+    if used_percentage > threshold:
+        print("Disk usage exceeded threshold. Deleting oldest files...")
+        files = sorted(
+            (os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(".jpg")),
+            key=os.path.getctime
+        )
+        while used_percentage > threshold and files:
+            oldest_file = files.pop(0)
+            os.remove(oldest_file)
+            print(f"Deleted {oldest_file}")
+            total, used, free = shutil.disk_usage("/")
+            used_percentage = (used / total) * 100
 
 # Ask for the experiment name
 experiment_name = input("Enter the experiment name: ")
-image_interval = input("Enter the image capture interval (in minutes): ")
+image_interval = int(input("Enter the image capture interval (in minutes): "))
 
 # Initialize the camera
 picam2 = Picamera2()
@@ -42,7 +84,7 @@ current_branch = subprocess.run(['git', 'branch', '--show-current'], cwd=repo_pa
 subprocess.run(['git', 'checkout', current_branch], cwd=repo_path)
 
 # Capture images at specified intervals and upload to Git
-interval = image_interval*60
+interval = image_interval * 60
 while True:
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     image_path = os.path.join(output_dir, f"{timestamp}.jpg")
@@ -63,6 +105,14 @@ while True:
     subprocess.run(['git', 'push'], cwd=repo_path)
 
     print(f"Captured and uploaded image at {timestamp}")
+
+    # Delete the image from the local storage after pushing to GitHub
+    os.remove(image_path)
+    print(f"Deleted local image at {image_path}")
+
+    # Manage disk usage
+    manage_disk_usage(output_dir)
+
     time.sleep(interval)
 
 picam2.stop()
