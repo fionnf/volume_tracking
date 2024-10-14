@@ -6,13 +6,15 @@ from picamera2 import Picamera2
 
 # Ask for the experiment name
 experiment_name = input("Enter the experiment name: ")
+image_interval = input("Enter the image capture interval (in minutes): ")
 
 # Initialize the camera
 picam2 = Picamera2()
 picam2.start()
 
 # Define the directory to save images
-output_dir = f"images/{experiment_name}"
+timestamp = time.strftime("%Y%m%d-%H%M%S")
+output_dir = f"images/{experiment_name}_{timestamp}"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
@@ -40,7 +42,7 @@ current_branch = subprocess.run(['git', 'branch', '--show-current'], cwd=repo_pa
 subprocess.run(['git', 'checkout', current_branch], cwd=repo_path)
 
 # Capture images at specified intervals and upload to Git
-interval = 10  # Interval in seconds
+interval = image_interval*60
 while True:
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     image_path = os.path.join(output_dir, f"{timestamp}.jpg")
