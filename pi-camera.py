@@ -1,6 +1,7 @@
 import time
 import os
 import subprocess
+import cv2
 from picamera2 import Picamera2
 
 # Ask for the experiment name
