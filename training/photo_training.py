@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Load the image from a file
-image_path = "/training/training_1.png"
+image_path = "training_1.png"
 frame = cv2.imread(image_path)
 
 # Rotate the image 90 degrees clockwise if needed

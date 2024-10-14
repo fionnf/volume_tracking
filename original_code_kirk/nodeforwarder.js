@@ -44,7 +44,7 @@ var cors = require('cors')
 const createCsvWriter = require('csv-writer').createArrayCsvWriter;
 const csvWriter = createCsvWriter({
     header: ['Time (seconds since epoch)', 'Pump A duty (0-255)', 'Pump B Duty (0-255)','Pump A rpm', 'Pump B rpm'],
-    path: 'C:\\Users\\monroegroup\\Nextcloud\\docs\\projects\\PhD\\data\\pumps\\speeds\\' + (new Date().getTime()/1000).toString() + '.csv'
+    path: 'C:\\Users\\monroegroup\\Nextcloud\\docs\\projects\\PhD\\images\\pumps\\speeds\\' + (new Date().getTime()/1000).toString() + '.csv'
 });
 http.listen(hp);
 
@@ -105,7 +105,7 @@ serialPort.on('data', function (data) {
 //Enable Cross Site Scripting
 app.use(cors())
 
-//Allows us to rip out data?
+//Allows us to rip out images?
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
