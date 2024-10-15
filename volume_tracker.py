@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 def read_calibration(file_path):
     with open(file_path, 'r') as f:
@@ -12,7 +13,6 @@ def read_calibration(file_path):
         max_volume = float(lines[2].split(':')[1].strip())
         instructions = lines[3].split(':')[1].strip()
     return shape, min_volume, max_volume, instructions
-
 
 def calculate_height(roi, frame, processed_dir, blur_dir, filename):
     roi_frame = frame[int(roi[1]):int(roi[1] + roi[3]), int(roi[0]):int(roi[0] + roi[2])]
@@ -63,29 +63,34 @@ def calculate_height(roi, frame, processed_dir, blur_dir, filename):
     height = roi[3] - y
     return height
 
-
 def process_images(directory, r1, r2, shape, min_volume, max_volume):
     volumes = []
     timestamps = []
     raw_heights = []
+    frames = []
 
     # Create subdirectories for processed and blur images
     processed_dir = os.path.join(directory, "processed_images")
     blur_dir = os.path.join(directory, "blur_images")
-    if not os.path.exists(processed_dir):
-        os.makedirs(processed_dir)
-    if not os.path.exists(blur_dir):
-        os.makedirs(blur_dir)
+    container1_processed_dir = os.path.join(processed_dir, "container1")
+    container2_processed_dir = os.path.join(processed_dir, "container2")
+    container1_blur_dir = os.path.join(blur_dir, "container1")
+    container2_blur_dir = os.path.join(blur_dir, "container2")
+
+    for dir_path in [processed_dir, blur_dir, container1_processed_dir, container2_processed_dir, container1_blur_dir, container2_blur_dir]:
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
 
     for filename in sorted(os.listdir(directory)):
         if filename.endswith(".jpg"):
             filepath = os.path.join(directory, filename)
             frame = cv2.imread(filepath)
+            frames.append(frame)
             timestamp = time.strptime(filename.split('.')[0], "%Y%m%d-%H%M%S")
             timestamps.append(timestamp)
 
-            height1 = calculate_height(r1, frame, processed_dir, blur_dir, filename)
-            height2 = calculate_height(r2, frame, processed_dir, blur_dir, filename)
+            height1 = calculate_height(r1, frame, container1_processed_dir, container1_blur_dir, filename)
+            height2 = calculate_height(r2, frame, container2_processed_dir, container2_blur_dir, filename)
 
             container_height1 = r1[3]
             volume1 = calculate_volume(height1, min_volume, max_volume, container_height1, shape)
@@ -96,7 +101,7 @@ def process_images(directory, r1, r2, shape, min_volume, max_volume):
             volumes.append((volume1, volume2))
             raw_heights.append((height1, height2))
 
-    return timestamps, volumes, raw_heights
+    return timestamps, volumes, raw_heights, frames
 
 def calculate_volume(height, min_volume, max_volume, container_height, shape):
     if shape == 'cylindrical':
@@ -125,6 +130,23 @@ def plot_volumes(timestamps, volumes):
     plt.legend()
     plt.show()
 
+def create_animation(frames, timestamps, volumes, output_file):
+    fig, ax = plt.subplots()
+    ims = []
+
+    for frame, timestamp, volume in zip(frames, timestamps, volumes):
+        im = plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), animated=True)
+        timestamp_text = plt.text(10, frame.shape[0] - 30, time.strftime('%Y-%m-%d %H:%M:%S', timestamp),
+                                  color='white', fontsize=8, weight='bold')
+        volume_text = plt.text(10, frame.shape[0] - 15, f'Volume1: {volume[0]:.2f} mL, Volume2: {volume[1]:.2f} mL',
+                               color='white', fontsize=8, weight='bold')
+        ims.append([im, timestamp_text, volume_text])
+
+    plt.axis('off')  # Remove axes
+    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove margins
+    ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True, repeat_delay=1000)
+    ani.save(output_file, writer='pillow')
+
 if __name__ == "__main__":
     directory = input("Enter the directory containing the images: ")
     calibration_dir = 'calibration'
@@ -137,6 +159,7 @@ if __name__ == "__main__":
     file_index = int(input("Select the calibration file by number: ")) - 1
     calibration_file = os.path.join(calibration_dir, calibration_files[file_index])
     output_file = os.path.join(directory, "volumes.csv")
+    animation_file = os.path.join(directory, "containers_animation.gif")
 
     shape, min_volume, max_volume, instructions = read_calibration(calibration_file)
 
@@ -148,6 +171,7 @@ if __name__ == "__main__":
     r2 = cv2.selectROI("Select ROI 2", sample_image, fromCenter=False, showCrosshair=True)
     cv2.destroyAllWindows()
 
-    timestamps, volumes, raw_heights = process_images(directory, r1, r2, shape, min_volume, max_volume)
+    timestamps, volumes, raw_heights, frames = process_images(directory, r1, r2, shape, min_volume, max_volume)
     save_results(timestamps, volumes, raw_heights, output_file)
     plot_volumes(timestamps, volumes)
+    create_animation(frames, timestamps, volumes, animation_file)
