@@ -5,6 +5,7 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.dates as mdates
+from datetime import datetime
 
 
 def read_calibration(file_path):
@@ -149,27 +150,36 @@ def create_animation(frames, timestamps, volumes, output_file):
     ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True, repeat_delay=1000)
     ani.save(output_file, writer='pillow')
 
+
 def create_combined_animation(frames, timestamps, volumes, output_file):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 8))
     ims = []
 
-    # Convert timestamps to seconds since epoch for plotting
-    times = [time.mktime(ts) for ts in timestamps]
+    # Convert timestamps to datetime objects for proper labeling
+    datetime_times = [datetime.fromtimestamp(time.mktime(ts)) for ts in timestamps]
+    datetime_times_num = mdates.date2num(datetime_times)  # Convert to matplotlib number format
 
     # Separate volumes for both containers and calculate the total volume
     volume1 = [v[0] for v in volumes]
     volume2 = [v[1] for v in volumes]
     total_volume = [v[0] + v[1] for v in volumes]
 
-    # Initial plot setup for the volume data
-    ax2.plot(times, volume1, label='Container 1', color='blue')
-    ax2.plot(times, volume2, label='Container 2', color='orange')
-    ax2.plot(times, total_volume, label='Total Volume', color='green')
+    # Initial plot setup for the volume data (only once, not per frame)
+    ax2.plot(datetime_times_num, volume1, label='Container 1', color='blue')
+    ax2.plot(datetime_times_num, volume2, label='Container 2', color='orange')
+    ax2.plot(datetime_times_num, total_volume, label='Total Volume', color='green')
 
     # Set axis labels and legend
     ax2.set_xlabel('Time')
     ax2.set_ylabel('Volume (mL)')
     ax2.legend(loc='upper left')
+
+    # Set the x-axis format for time
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+    ax2.xaxis.set_major_locator(mdates.AutoDateLocator())
+
+    # Rotate the time labels for readability
+    fig.autofmt_xdate()
 
     # Loop through the frames, timestamps, and volumes to create each animation frame
     for i, (frame, timestamp, volume) in enumerate(zip(frames, timestamps, volumes)):
@@ -184,10 +194,10 @@ def create_combined_animation(frames, timestamps, volumes, output_file):
                                f'Volume 1: {volume[0]:.2f} mL, Volume 2: {volume[1]:.2f} mL',
                                color='white', fontsize=8, weight='bold')
 
-        # Create scatter plots to update the dots for the current frame
-        dot1 = ax2.scatter(times[i], volume1[i], color='blue', zorder=5)
-        dot2 = ax2.scatter(times[i], volume2[i], color='orange', zorder=5)
-        dot3 = ax2.scatter(times[i], total_volume[i], color='green', zorder=5)
+        # Create scatter plots to update the dots for the current frame (without clearing the axes)
+        dot1 = ax2.scatter(datetime_times_num[i], volume1[i], color='blue', zorder=5)
+        dot2 = ax2.scatter(datetime_times_num[i], volume2[i], color='orange', zorder=5)
+        dot3 = ax2.scatter(datetime_times_num[i], total_volume[i], color='green', zorder=5)
 
         # Append the image, texts, and dots to the list of animation frames
         ims.append([im, timestamp_text, volume_text, dot1, dot2, dot3])
@@ -195,8 +205,11 @@ def create_combined_animation(frames, timestamps, volumes, output_file):
     # Remove axis from the image subplot for cleaner visuals
     ax1.axis('off')
 
-    # Remove margins from the figure to make it look more compact
-    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    # Adjust figure margins to prevent axis from being cut off
+    fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.15)  # Adjust margins
+
+    # Rotate the time labels for readability
+    fig.autofmt_xdate(bottom=0.2)  # Ensure enough space for x-axis labels
 
     # Create and save the animation
     ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True, repeat_delay=1000)
