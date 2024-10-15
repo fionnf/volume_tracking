@@ -4,6 +4,8 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import matplotlib.dates as mdates
+
 
 def read_calibration(file_path):
     with open(file_path, 'r') as f:
@@ -151,33 +153,52 @@ def create_combined_animation(frames, timestamps, volumes, output_file):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 8))
     ims = []
 
+    # Convert timestamps to seconds since epoch for plotting
     times = [time.mktime(ts) for ts in timestamps]
+
+    # Separate volumes for both containers and calculate the total volume
     volume1 = [v[0] for v in volumes]
     volume2 = [v[1] for v in volumes]
     total_volume = [v[0] + v[1] for v in volumes]
 
+    # Initial plot setup for the volume data
+    ax2.plot(times, volume1, label='Container 1', color='blue')
+    ax2.plot(times, volume2, label='Container 2', color='orange')
+    ax2.plot(times, total_volume, label='Total Volume', color='green')
+
+    # Set axis labels and legend
+    ax2.set_xlabel('Time')
+    ax2.set_ylabel('Volume (mL)')
+    ax2.legend(loc='upper left')
+
+    # Loop through the frames, timestamps, and volumes to create each animation frame
     for i, (frame, timestamp, volume) in enumerate(zip(frames, timestamps, volumes)):
+        # Display the image (frame) in ax1
         im = ax1.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), animated=True)
-        timestamp_text = ax1.text(10, frame.shape[0] - 30, time.strftime('%Y-%m-%d %H:%M:%S', timestamp),
+
+        # Add timestamp and volume texts on the image
+        timestamp_text = ax1.text(10, frame.shape[0] - 30,
+                                  time.strftime('%Y-%m-%d %H:%M:%S', timestamp),
                                   color='white', fontsize=8, weight='bold')
-        volume_text = ax1.text(10, frame.shape[0] - 15, f'Volume1: {volume[0]:.2f} mL, Volume2: {volume[1]:.2f} mL',
+        volume_text = ax1.text(10, frame.shape[0] - 15,
+                               f'Volume 1: {volume[0]:.2f} mL, Volume 2: {volume[1]:.2f} mL',
                                color='white', fontsize=8, weight='bold')
 
-        ax2.clear()
-        ax2.plot(times[:i+1], volume1[:i+1], label='Container 1')
-        ax2.plot(times[:i+1], volume2[:i+1], label='Container 2')
-        ax2.plot(times[:i+1], total_volume[:i+1], label='Total Volume')
-        ax2.scatter(times[i], volume1[i], color='blue')  # Moving dot for Container 1
-        ax2.scatter(times[i], volume2[i], color='orange')  # Moving dot for Container 2
-        ax2.scatter(times[i], total_volume[i], color='green')  # Moving dot for Total Volume
-        ax2.set_xlabel('Time')
-        ax2.set_ylabel('Volume (mL)')
-        ax2.legend()
+        # Create scatter plots to update the dots for the current frame
+        dot1 = ax2.scatter(times[i], volume1[i], color='blue', zorder=5)
+        dot2 = ax2.scatter(times[i], volume2[i], color='orange', zorder=5)
+        dot3 = ax2.scatter(times[i], total_volume[i], color='green', zorder=5)
 
-        ims.append([im, timestamp_text, volume_text])
+        # Append the image, texts, and dots to the list of animation frames
+        ims.append([im, timestamp_text, volume_text, dot1, dot2, dot3])
 
-    ax1.axis('off')  # Remove axes from the image subplot
-    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove margins
+    # Remove axis from the image subplot for cleaner visuals
+    ax1.axis('off')
+
+    # Remove margins from the figure to make it look more compact
+    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+
+    # Create and save the animation
     ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True, repeat_delay=1000)
     ani.save(output_file, writer='pillow')
 
