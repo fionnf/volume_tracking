@@ -112,6 +112,31 @@ def calculate_volume(height, min_volume, max_volume, container_height, shape):
     else:
         raise ValueError("Unsupported shape")
 
+
+def remove_outliers_and_interpolate(volumes, threshold=2.5):
+    """
+    Remove outliers based on the Z-score method and interpolate the missing values.
+    """
+    # Convert volumes to numpy array for easier processing
+    volumes = np.array(volumes)
+
+    # Calculate Z-scores to detect outliers
+    mean_volume = np.mean(volumes)
+    std_volume = np.std(volumes)
+    z_scores = (volumes - mean_volume) / std_volume
+
+    # Find indices where the Z-score is beyond the threshold (considered outliers)
+    outliers = np.abs(z_scores) > threshold
+
+    # Interpolate only the outlier points
+    clean_volumes = volumes.copy()
+    clean_volumes[outliers] = np.nan  # Replace outliers with NaNs
+
+    # Interpolate the missing values (linear interpolation)
+    clean_volumes = pd.Series(clean_volumes).interpolate().to_numpy()
+
+    return clean_volumes
+
 def save_results(timestamps, volumes, raw_heights, output_file):
     with open(output_file, 'w') as f:
         f.write("Timestamp,Height1,Height2,Volume1,Volume2,TotalVolume\n")
@@ -233,6 +258,7 @@ if __name__ == "__main__":
     shape, min_volume, max_volume, instructions = read_calibration(calibration_file)
 
     print(f"Instructions: {instructions}")
+
 
     # Select ROIs once
     sample_image = cv2.imread(os.path.join(directory, sorted(os.listdir(directory))[0]))
