@@ -19,6 +19,18 @@ Dependencies:
 - OpenCV
 - Git
 - shutil
+
+To use on a Raspberry pi via ssh
+1. Log into SSH of the raspberry pi
+2. Run the following command:
+    nohup python3 pi-camera.py > output.log 2>&1 &
+    This prevents the script from stopping when the SSH session is closed.
+    The output of the script is written to output.log.
+3. To stop the script, find the process ID (PID) using the following command:
+    ps -ef | grep pi-camera.py
+    and then kill the process using:
+    kill <PID>
+
 """
 
 import time
