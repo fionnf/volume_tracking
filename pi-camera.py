@@ -39,6 +39,7 @@ import subprocess
 import cv2
 from picamera2 import Picamera2
 import shutil
+import argparse
 
 # Function to check disk usage and delete oldest files if necessary
 def manage_disk_usage(directory, threshold=80):
@@ -58,9 +59,14 @@ def manage_disk_usage(directory, threshold=80):
             total, used, free = shutil.disk_usage("/")
             used_percentage = (used / total) * 100
 
-# Ask for the experiment name
-experiment_name = input("Enter the experiment name: ")
-image_interval = int(input("Enter the image capture interval (in seconds): "))
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Capture images at specified intervals using the Picamera2.")
+parser.add_argument("experiment_name", type=str, help="Name of the experiment")
+parser.add_argument("image_interval", type=int, help="Image capture interval in seconds")
+args = parser.parse_args()
+
+experiment_name = args.experiment_name
+image_interval = args.image_interval
 
 # Initialize the camera
 picam2 = Picamera2()
