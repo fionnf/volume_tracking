@@ -147,6 +147,41 @@ def create_animation(frames, timestamps, volumes, output_file):
     ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True, repeat_delay=1000)
     ani.save(output_file, writer='pillow')
 
+def create_combined_animation(frames, timestamps, volumes, output_file):
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 8))
+    ims = []
+
+    times = [time.mktime(ts) for ts in timestamps]
+    volume1 = [v[0] for v in volumes]
+    volume2 = [v[1] for v in volumes]
+    total_volume = [v[0] + v[1] for v in volumes]
+
+    for i, (frame, timestamp, volume) in enumerate(zip(frames, timestamps, volumes)):
+        im = ax1.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), animated=True)
+        timestamp_text = ax1.text(10, frame.shape[0] - 30, time.strftime('%Y-%m-%d %H:%M:%S', timestamp),
+                                  color='white', fontsize=8, weight='bold')
+        volume_text = ax1.text(10, frame.shape[0] - 15, f'Volume1: {volume[0]:.2f} mL, Volume2: {volume[1]:.2f} mL',
+                               color='white', fontsize=8, weight='bold')
+
+        ax2.clear()
+        ax2.plot(times[:i+1], volume1[:i+1], label='Container 1')
+        ax2.plot(times[:i+1], volume2[:i+1], label='Container 2')
+        ax2.plot(times[:i+1], total_volume[:i+1], label='Total Volume')
+        ax2.scatter(times[i], volume1[i], color='blue')  # Moving dot for Container 1
+        ax2.scatter(times[i], volume2[i], color='orange')  # Moving dot for Container 2
+        ax2.scatter(times[i], total_volume[i], color='green')  # Moving dot for Total Volume
+        ax2.set_xlabel('Time')
+        ax2.set_ylabel('Volume (mL)')
+        ax2.legend()
+
+        ims.append([im, timestamp_text, volume_text])
+
+    ax1.axis('off')  # Remove axes from the image subplot
+    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove margins
+    ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True, repeat_delay=1000)
+    ani.save(output_file, writer='pillow')
+
+# Example usage
 if __name__ == "__main__":
     directory = input("Enter the directory containing the images: ")
     calibration_dir = 'calibration'
@@ -159,7 +194,7 @@ if __name__ == "__main__":
     file_index = int(input("Select the calibration file by number: ")) - 1
     calibration_file = os.path.join(calibration_dir, calibration_files[file_index])
     output_file = os.path.join(directory, "volumes.csv")
-    animation_file = os.path.join(directory, "containers_animation.gif")
+    animation_file = os.path.join(directory, "containers_combined_animation.gif")
 
     shape, min_volume, max_volume, instructions = read_calibration(calibration_file)
 
@@ -174,4 +209,4 @@ if __name__ == "__main__":
     timestamps, volumes, raw_heights, frames = process_images(directory, r1, r2, shape, min_volume, max_volume)
     save_results(timestamps, volumes, raw_heights, output_file)
     plot_volumes(timestamps, volumes)
-    create_animation(frames, timestamps, volumes, animation_file)
+    create_combined_animation(frames, timestamps, volumes, animation_file)
