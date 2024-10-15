@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.dates as mdates
 from datetime import datetime
+import pandas as pd
 
 
 def read_calibration(file_path):
@@ -66,52 +67,6 @@ def calculate_height(roi, frame, processed_dir, blur_dir, filename):
     height = roi[3] - y
     return height
 
-def process_images(directory, r1, r2, shape, min_volume, max_volume):
-    volumes = []
-    timestamps = []
-    raw_heights = []
-    frames = []
-
-    # Create subdirectories for processed and blur images
-    processed_dir = os.path.join(directory, "processed_images")
-    blur_dir = os.path.join(directory, "blur_images")
-    container1_processed_dir = os.path.join(processed_dir, "container1")
-    container2_processed_dir = os.path.join(processed_dir, "container2")
-    container1_blur_dir = os.path.join(blur_dir, "container1")
-    container2_blur_dir = os.path.join(blur_dir, "container2")
-
-    for dir_path in [processed_dir, blur_dir, container1_processed_dir, container2_processed_dir, container1_blur_dir, container2_blur_dir]:
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-
-    for filename in sorted(os.listdir(directory)):
-        if filename.endswith(".jpg"):
-            filepath = os.path.join(directory, filename)
-            frame = cv2.imread(filepath)
-            frames.append(frame)
-            timestamp = time.strptime(filename.split('.')[0], "%Y%m%d-%H%M%S")
-            timestamps.append(timestamp)
-
-            height1 = calculate_height(r1, frame, container1_processed_dir, container1_blur_dir, filename)
-            height2 = calculate_height(r2, frame, container2_processed_dir, container2_blur_dir, filename)
-
-            container_height1 = r1[3]
-            volume1 = calculate_volume(height1, min_volume, max_volume, container_height1, shape)
-
-            container_height2 = r2[3]
-            volume2 = calculate_volume(height2, min_volume, max_volume, container_height2, shape)
-
-            volumes.append((volume1, volume2))
-            raw_heights.append((height1, height2))
-
-    return timestamps, volumes, raw_heights, frames
-
-def calculate_volume(height, min_volume, max_volume, container_height, shape):
-    if shape == 'cylindrical':
-        return min_volume + (height / container_height) * (max_volume - min_volume)
-    else:
-        raise ValueError("Unsupported shape")
-
 
 def remove_outliers_and_interpolate(volumes, threshold=2.5):
     """
@@ -136,6 +91,69 @@ def remove_outliers_and_interpolate(volumes, threshold=2.5):
     clean_volumes = pd.Series(clean_volumes).interpolate().to_numpy()
 
     return clean_volumes
+
+
+def process_images(directory, r1, r2, shape, min_volume, max_volume):
+    volumes = []
+    timestamps = []
+    raw_heights = []
+    frames = []
+
+    # Create subdirectories for processed and blur images
+    processed_dir = os.path.join(directory, "processed_images")
+    blur_dir = os.path.join(directory, "blur_images")
+    container1_processed_dir = os.path.join(processed_dir, "container1")
+    container2_processed_dir = os.path.join(processed_dir, "container2")
+    container1_blur_dir = os.path.join(blur_dir, "container1")
+    container2_blur_dir = os.path.join(blur_dir, "container2")
+
+    for dir_path in [processed_dir, blur_dir, container1_processed_dir, container2_processed_dir, container1_blur_dir,
+                     container2_blur_dir]:
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+    for filename in sorted(os.listdir(directory)):
+        if filename.endswith(".jpg"):
+            filepath = os.path.join(directory, filename)
+            frame = cv2.imread(filepath)
+            frames.append(frame)
+            timestamp = time.strptime(filename.split('.')[0], "%Y%m%d-%H%M%S")
+            timestamps.append(timestamp)
+
+            # Calculate heights from the images
+            height1 = calculate_height(r1, frame, container1_processed_dir, container1_blur_dir, filename)
+            height2 = calculate_height(r2, frame, container2_processed_dir, container2_blur_dir, filename)
+
+            container_height1 = r1[3]
+            container_height2 = r2[3]
+
+            # Calculate the volumes for each container
+            volume1 = calculate_volume(height1, min_volume, max_volume, container_height1, shape)
+            volume2 = calculate_volume(height2, min_volume, max_volume, container_height2, shape)
+
+            # Append the raw volumes and heights
+            volumes.append((volume1, volume2))
+            raw_heights.append((height1, height2))
+
+    # Split volumes into container1 and container2 lists for outlier detection
+    volume1_list = [v[0] for v in volumes]
+    volume2_list = [v[1] for v in volumes]
+
+    # Remove outliers and interpolate for each container's volumes
+    clean_volume1 = remove_outliers_and_interpolate(volume1_list)
+    clean_volume2 = remove_outliers_and_interpolate(volume2_list)
+
+    # Recombine the cleaned volumes
+    cleaned_volumes = list(zip(clean_volume1, clean_volume2))
+
+    return timestamps, cleaned_volumes, raw_heights, frames
+
+def calculate_volume(height, min_volume, max_volume, container_height, shape):
+    if shape == 'cylindrical':
+        return min_volume + (height / container_height) * (max_volume - min_volume)
+    else:
+        raise ValueError("Unsupported shape")
+
 
 def save_results(timestamps, volumes, raw_heights, output_file):
     with open(output_file, 'w') as f:
