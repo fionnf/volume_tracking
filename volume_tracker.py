@@ -21,8 +21,8 @@ def read_calibration(file_path):
 def calculate_height(roi, frame, processed_dir, blur_dir, filename):
     roi_frame = frame[int(roi[1]):int(roi[1] + roi[3]), int(roi[0]):int(roi[0] + roi[2])]
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
-    _, binary_frame = cv2.threshold(gray_frame, 60, 255, cv2.THRESH_BINARY)
-    blurred_frame = cv2.GaussianBlur(binary_frame, (25, 5), 0)
+    _, binary_frame = cv2.threshold(gray_frame, 50, 255, cv2.THRESH_BINARY)
+    blurred_frame = cv2.GaussianBlur(binary_frame, (45, 5), 0)
 
     # Save the Gaussian blur image
     blur_image_path = os.path.join(blur_dir, filename)
