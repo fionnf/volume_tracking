@@ -8,6 +8,7 @@ import matplotlib.dates as mdates
 from datetime import datetime
 import pandas as pd
 
+CREATE_ANIMATIONS = False
 
 def read_calibration(file_path):
     with open(file_path, 'r') as f:
@@ -21,8 +22,8 @@ def read_calibration(file_path):
 def calculate_height(roi, frame, processed_dir, blur_dir, filename):
     roi_frame = frame[int(roi[1]):int(roi[1] + roi[3]), int(roi[0]):int(roi[0] + roi[2])]
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
-    _, binary_frame = cv2.threshold(gray_frame, 50, 255, cv2.THRESH_BINARY)
-    blurred_frame = cv2.GaussianBlur(binary_frame, (45, 5), 0)
+    _, binary_frame = cv2.threshold(gray_frame, 30, 255, cv2.THRESH_BINARY)
+    blurred_frame = cv2.GaussianBlur(binary_frame, (55, 5), 0)
 
     # Save the Gaussian blur image
     blur_image_path = os.path.join(blur_dir, filename)
@@ -68,16 +69,20 @@ def calculate_height(roi, frame, processed_dir, blur_dir, filename):
     return height
 
 
-def remove_outliers_and_interpolate(volumes, threshold=2.5):
+def remove_outliers_and_interpolate(volumes, threshold=2):
     """
     Remove outliers based on the Z-score method and interpolate the missing values.
+    Also, remove all values above 5 ml.
     """
     # Convert volumes to numpy array for easier processing
     volumes = np.array(volumes)
 
+    # Remove values above 5 ml
+    volumes[volumes > 7] = np.nan
+
     # Calculate Z-scores to detect outliers
-    mean_volume = np.mean(volumes)
-    std_volume = np.std(volumes)
+    mean_volume = np.nanmean(volumes)
+    std_volume = np.nanstd(volumes)
     z_scores = (volumes - mean_volume) / std_volume
 
     # Find indices where the Z-score is beyond the threshold (considered outliers)
@@ -168,9 +173,9 @@ def plot_volumes(timestamps, volumes):
     volume2 = [v[1] for v in volumes]
     total_volume = [v[0] + v[1] for v in volumes]
 
-    plt.plot(times, volume1, label='Container 1')
-    plt.plot(times, volume2, label='Container 2')
-    plt.plot(times, total_volume, label='Total Volume')
+    plt.scatter(times, volume1, label='Container 1', s=3)
+    plt.scatter(times, volume2, label='Container 2', s=3)
+    plt.scatter(times, total_volume, label='Total Volume', s=3)
     plt.xlabel('Time')
     plt.ylabel('Volume (mL)')
     plt.legend()
@@ -287,4 +292,5 @@ if __name__ == "__main__":
     timestamps, volumes, raw_heights, frames = process_images(directory, r1, r2, shape, min_volume, max_volume)
     save_results(timestamps, volumes, raw_heights, output_file)
     plot_volumes(timestamps, volumes)
-    create_combined_animation(frames, timestamps, volumes, animation_file)
+    if CREATE_ANIMATIONS:
+        create_combined_animation(frames, timestamps, volumes, animation_file)
