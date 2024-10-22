@@ -168,7 +168,13 @@ def save_results(timestamps, volumes, raw_heights, output_file):
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S', timestamp)},{height1:.2f},{height2:.2f},{volume1:.2f},{volume2:.2f},{total_volume:.2f}\n")
 
 def plot_volumes(timestamps, volumes):
-    times = [time.mktime(ts) for ts in timestamps]
+
+    #uncomment the following for display in days instead of seconds
+    start_time = time.mktime(timestamps[0])
+    times = [(time.mktime(ts) - start_time) / (60 * 60 * 24) for ts in timestamps]
+
+    #uncomment the following for display in seconds instead of days
+    #times = [time.mktime(ts) for ts in timestamps
     volume1 = [v[0] for v in volumes]
     volume2 = [v[1] for v in volumes]
     total_volume = [v[0] + v[1] for v in volumes]
@@ -176,7 +182,7 @@ def plot_volumes(timestamps, volumes):
     plt.scatter(times, volume1, label='Container 1', s=3)
     plt.scatter(times, volume2, label='Container 2', s=3)
     plt.scatter(times, total_volume, label='Total Volume', s=3)
-    plt.xlabel('Time')
+    plt.xlabel('Experiment time (days)')
     plt.ylabel('Volume (mL)')
     plt.legend()
     plt.show()
