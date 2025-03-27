@@ -22,8 +22,8 @@ def read_calibration(file_path):
 def calculate_height(roi, frame, processed_dir, blur_dir, filename):
     roi_frame = frame[int(roi[1]):int(roi[1] + roi[3]), int(roi[0]):int(roi[0] + roi[2])]
     gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
-    _, binary_frame = cv2.threshold(gray_frame, 30, 255, cv2.THRESH_BINARY)
-    blurred_frame = cv2.GaussianBlur(binary_frame, (55, 5), 0)
+    _, binary_frame = cv2.threshold(gray_frame, 85, 255, cv2.THRESH_BINARY)
+    blurred_frame = cv2.GaussianBlur(binary_frame, (75, 5), 0)
 
     # Save the Gaussian blur image
     blur_image_path = os.path.join(blur_dir, filename)
@@ -77,8 +77,8 @@ def remove_outliers_and_interpolate(volumes, threshold=2):
     # Convert volumes to numpy array for easier processing
     volumes = np.array(volumes)
 
-    # Remove values above 5 ml
-    volumes[volumes > 7] = np.nan
+    # Remove values above max
+    volumes[volumes > 6] = np.nan
 
     # Calculate Z-scores to detect outliers
     mean_volume = np.nanmean(volumes)
@@ -121,6 +121,10 @@ def process_images(directory, r1, r2, shape, min_volume, max_volume):
         if filename.endswith(".jpg"):
             filepath = os.path.join(directory, filename)
             frame = cv2.imread(filepath)
+
+            # Rotate the image 180 degrees
+            #frame = cv2.rotate(frame, cv2.ROTATE_180)
+
             frames.append(frame)
             timestamp = time.strptime(filename.split('.')[0], "%Y%m%d-%H%M%S")
             timestamps.append(timestamp)
@@ -152,7 +156,7 @@ def process_images(directory, r1, r2, shape, min_volume, max_volume):
     cleaned_volumes = list(zip(clean_volume1, clean_volume2))
 
     return timestamps, cleaned_volumes, raw_heights, frames
-
+12
 def calculate_volume(height, min_volume, max_volume, container_height, shape):
     if shape == 'cylindrical':
         return min_volume + (height / container_height) * (max_volume - min_volume)
@@ -288,9 +292,22 @@ if __name__ == "__main__":
 
     print(f"Instructions: {instructions}")
 
-
     # Select ROIs once
-    sample_image = cv2.imread(os.path.join(directory, sorted(os.listdir(directory))[0]))
+    image_files = [f for f in sorted(os.listdir(directory)) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+    if not image_files:
+        raise FileNotFoundError("No image files found in the directory.")
+
+    sample_image_path = os.path.join(directory, image_files[0])
+    print(f"Sample image path: {sample_image_path}")  # Debugging line
+    sample_image = cv2.imread(sample_image_path)
+
+    # Check if the sample image is loaded correctly
+    if sample_image is None:
+        raise FileNotFoundError(f"Sample image not found at path: {sample_image_path}")
+
+    # Rotate the sample image 180 degrees
+    #sample_image = cv2.rotate(sample_image, cv2.ROTATE_180)
+
     r1 = cv2.selectROI("Select ROI 1", sample_image, fromCenter=False, showCrosshair=True)
     r2 = cv2.selectROI("Select ROI 2", sample_image, fromCenter=False, showCrosshair=True)
     cv2.destroyAllWindows()

@@ -1,4 +1,4 @@
 shape: cylindrical
-min_volume: 1.5
-max_volume: 10
+min_volume: 1
+max_volume: 8
 instructions: Please select the cylindrical area from 1.5ml to 10ml
